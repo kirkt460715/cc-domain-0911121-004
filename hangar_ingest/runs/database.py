@@ -66,6 +66,18 @@ CREATE TABLE IF NOT EXISTS source_watermarks(
  source TEXT PRIMARY KEY,watermark TEXT NOT NULL,revision INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS processing_claims(
  batch_id TEXT PRIMARY KEY,owner TEXT NOT NULL,generation INTEGER NOT NULL,expires_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS collector_files(
+ collector TEXT NOT NULL,file_key TEXT NOT NULL,path TEXT NOT NULL,inode INTEGER NOT NULL,
+ generation INTEGER NOT NULL,state TEXT NOT NULL,position INTEGER NOT NULL,
+ read_position INTEGER NOT NULL,pending BLOB NOT NULL,
+ in_quotes INTEGER NOT NULL,line_number INTEGER NOT NULL,header_ok INTEGER NOT NULL,
+ mtime REAL NOT NULL,anchor_hash TEXT NOT NULL,anchor_len INTEGER NOT NULL,
+ first_seen TEXT NOT NULL,updated_at TEXT NOT NULL,
+ PRIMARY KEY(collector,file_key));
+CREATE TABLE IF NOT EXISTS collector_lineage(
+ batch_id TEXT NOT NULL,row_number INTEGER NOT NULL,collector TEXT NOT NULL,file_key TEXT NOT NULL,
+ generation INTEGER NOT NULL,path TEXT NOT NULL,start_offset INTEGER NOT NULL,end_offset INTEGER NOT NULL,
+ raw_text TEXT NOT NULL,created_at TEXT NOT NULL,PRIMARY KEY(batch_id,row_number));
 '''
 
 

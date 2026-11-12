@@ -36,6 +36,14 @@ def make_parser():
     export.add_argument('--format', choices=['directory', 'csv', 'ndjson'], default='directory')
     demo = sub.add_parser('demo')
     demo.add_argument('--fixture', required=True)
+    collect = sub.add_parser('collect', help='长期跟随或单轮扫描一个传感日志目录')
+    collect.add_argument('directory')
+    collect.add_argument('--source', required=True)
+    collect.add_argument('--name', default='default')
+    collect.add_argument('--follow', action='store_true', help='持续跟随直到连续空闲轮次')
+    collect.add_argument('--idle-polls', type=int, default=1)
+    collect.add_argument('--budget-bytes', type=int, default=1024 * 1024)
+    collect.add_argument('--positions', action='store_true', help='只输出各文件世代处理位置')
     return parser
 
 
@@ -117,6 +125,20 @@ def dispatch(app, args):
         return write_new(args.destination, content)
     if args.command == 'demo':
         return demo(app, json_input(args.fixture))
+    if args.command == 'collect':
+        from hangar_ingest.collector.pipeline import Collector
+        collector = Collector(app.db, args.source, args.directory,
+                              name=args.name, budget_bytes=args.budget_bytes)
+        if args.positions:
+            files = []
+            for entry in collector.positions():
+                rendered = dict(entry)
+                rendered['pending'] = entry['pending'].decode('utf-8', errors='replace')
+                files.append(rendered)
+            return {'files': files, 'lineage': collector.lineage()}
+        if args.follow:
+            return {'rounds': collector.follow(idle_polls=args.idle_polls)}
+        return collector.run_once()
     fail('unknown_command', 'Unknown command')
 
 
